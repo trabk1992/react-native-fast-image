@@ -136,6 +136,7 @@ class FastImageViewManager extends SimpleViewManager<FastImageViewWithUrl> imple
                 .put(REACT_ON_LOAD_EVENT, MapBuilder.of("registrationName", REACT_ON_LOAD_EVENT))
                 .put(REACT_ON_ERROR_EVENT, MapBuilder.of("registrationName", REACT_ON_ERROR_EVENT))
                 .put(REACT_ON_LOAD_END_EVENT, MapBuilder.of("registrationName", REACT_ON_LOAD_END_EVENT))
+                .put(REACT_ON_ANIMATION_COMPLETE_EVENT, MapBuilder.of("registrationName", REACT_ON_ANIMATION_COMPLETE_EVENT))
                 .build();
     }
 
