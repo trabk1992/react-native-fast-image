@@ -20,7 +20,23 @@
     self = [super init];
     self.resizeMode = RCTResizeModeCover;
     self.clipsToBounds = YES;
+    [self addObserver:self forKeyPath:@"currentLoopCount" options:NSKeyValueObservingOptionNew context:nil];
     return self;
+}
+
+-(void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+    [self sd_cancelCurrentImageLoad];
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context{
+    if ([keyPath isEqualToString:@"currentLoopCount"]) {
+        if (self.shouldCustomLoopCount &&
+            self.currentLoopCount == self.animationRepeatCount &&
+            self.onAnimationComplete) {
+            self.onAnimationComplete(@{});
+        }
+    }
 }
 
 - (void) setResizeMode: (RCTResizeMode)resizeMode {
@@ -28,6 +44,11 @@
         _resizeMode = resizeMode;
         self.contentMode = (UIViewContentMode) resizeMode;
     }
+}
+
+- (void)setLoopCount:(int)loopCount {
+    self.shouldCustomLoopCount = YES;
+    self.animationRepeatCount = loopCount;
 }
 
 - (void) setOnFastImageLoadEnd: (RCTDirectEventBlock)onFastImageLoadEnd {
@@ -235,10 +256,6 @@
                     }
                 }
             }];
-}
-
-- (void) dealloc {
-    [self sd_cancelCurrentImageLoad];
 }
 
 @end

@@ -8,7 +8,10 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
+
+import androidx.vectordrawable.graphics.drawable.Animatable2Compat.AnimationCallback;
 
 import androidx.annotation.NonNull;
 
@@ -35,6 +38,8 @@ class FastImageViewManager extends SimpleViewManager<FastImageViewWithUrl> imple
     static final String REACT_CLASS = "FastImageView";
     static final String REACT_ON_LOAD_START_EVENT = "onFastImageLoadStart";
     static final String REACT_ON_PROGRESS_EVENT = "onFastImageProgress";
+
+    private static final String REACT_ON_ANIMATION_COMPLETE_EVENT = "onAnimationComplete";
     private static final Map<String, List<FastImageViewWithUrl>> VIEWS_FOR_URLS = new WeakHashMap<>();
 
     @Nullable
@@ -53,12 +58,31 @@ class FastImageViewManager extends SimpleViewManager<FastImageViewWithUrl> imple
             requestManager = Glide.with(reactContext);
         }
 
-        return new FastImageViewWithUrl(reactContext);
+        final FastImageViewWithUrl fastImage = new FastImageViewWithUrl(reactContext);
+        fastImage.registerAnimationCallback(new AnimationCallback() {
+            @Override
+            public void onAnimationEnd(Drawable drawable) {
+                super.onAnimationEnd(drawable);
+
+                WritableMap event = new WritableNativeMap();
+                ThemedReactContext context = (ThemedReactContext) fastImage.getContext();
+                RCTEventEmitter eventEmitter = context.getJSModule(RCTEventEmitter.class);
+                int viewId = fastImage.getId();
+                eventEmitter.receiveEvent(viewId, REACT_ON_ANIMATION_COMPLETE_EVENT, event);
+            }
+        });
+
+        return fastImage;
     }
 
     @ReactProp(name = "source")
     public void setSource(FastImageViewWithUrl view, @Nullable ReadableMap source) {
         view.setSource(source);
+    }
+
+    @ReactProp(name = "loopCount")
+    public void setLoopCount(FastImageViewWithUrl view, int loopCount) {
+        view.setLoopCount(loopCount);
     }
 
     @ReactProp(name = "defaultSource")
@@ -87,6 +111,9 @@ class FastImageViewManager extends SimpleViewManager<FastImageViewWithUrl> imple
     public void onDropViewInstance(@NonNull FastImageViewWithUrl view) {
         // This will cancel existing requests.
         view.clearView(requestManager);
+
+        // Ensure view resource is clean before destruction
+        view.clearAnimationCallbacks();
 
         if (view.glideUrl != null) {
             final String key = view.glideUrl.toString();

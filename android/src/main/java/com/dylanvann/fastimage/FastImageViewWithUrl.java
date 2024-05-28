@@ -12,6 +12,7 @@ import androidx.appcompat.widget.AppCompatImageView;
 import com.bumptech.glide.RequestBuilder;
 import com.bumptech.glide.RequestManager;
 import com.bumptech.glide.load.model.GlideUrl;
+import com.bumptech.glide.load.resource.gif.GifDrawable;
 import com.bumptech.glide.request.Request;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
@@ -23,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import androidx.vectordrawable.graphics.drawable.Animatable2Compat.AnimationCallback;
 
 import javax.annotation.Nonnull;
 
@@ -32,6 +34,8 @@ class FastImageViewWithUrl extends AppCompatImageView {
     private Drawable mDefaultSource = null;
 
     public GlideUrl glideUrl;
+    public int loopCount = GifDrawable.LOOP_INTRINSIC;
+    private AnimationCallback _onAnimationComplete;
 
     public FastImageViewWithUrl(Context context) {
         super(context);
@@ -147,7 +151,7 @@ class FastImageViewWithUrl extends AppCompatImageView {
             if (key != null)
                 builder.listener(new FastImageRequestListener(key));
 
-            builder.into(this);
+            builder.into(new FastImageViewTarget(this));
         }
     }
 
@@ -155,5 +159,30 @@ class FastImageViewWithUrl extends AppCompatImageView {
         if (requestManager != null && getTag() != null && getTag() instanceof Request) {
             requestManager.clear(this);
         }
+    }
+
+    public void registerAnimationCallback(AnimationCallback animationCallback) {
+        _onAnimationComplete = animationCallback;
+    }
+
+    public void clearAnimationCallbacks() {
+        Drawable resource = this.getDrawable();
+
+        if (resource != null && resource instanceof GifDrawable) {
+            GifDrawable drawable = (GifDrawable)resource;
+            drawable.clearAnimationCallbacks();
+        }
+    }
+
+    // Public API
+    public void setLoopCount(int loop) {
+        loopCount = loop;
+    }
+
+    // Callback when our resource is set in FastImageViewTarget.
+    public void onSetResource(GifDrawable drawable) {
+        drawable.clearAnimationCallbacks();
+        drawable.registerAnimationCallback(_onAnimationComplete);
+        drawable.setLoopCount(loopCount);
     }
 }
